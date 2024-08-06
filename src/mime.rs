@@ -16,8 +16,11 @@ pub(crate) trait MimeDetector: Send + Sync {
 /// MIME struct holds information about a file format: the string representation
 /// of the MIME type, the extension and the parent file format.
 pub struct Mime {
+    /// The string representation of the MIME type.
     pub mime: String,
+    /// The aliases of the MIME type.
     pub aliases: Vec<String>,
+    /// The extension of the file format.
     pub extension: String,
     detector: Box<dyn MimeDetector>,
     chilren: Vec<Mime>,
@@ -65,7 +68,6 @@ impl Debug for Mime {
             .field("mime", &self.mime)
             .field("aliases", &self.aliases)
             .field("extension", &self.extension)
-            .field("children", &self.chilren)
             .finish()
     }
 }
@@ -82,6 +84,7 @@ impl Clone for Mime {
     }
 }
 
+/// Detect the MIME type of the content.
 pub fn detect(content: &[u8]) -> Mime {
     let limit = RATE_LIMIT.load(Ordering::Relaxed);
     let mut content = content;
@@ -90,4 +93,12 @@ pub fn detect(content: &[u8]) -> Mime {
     }
 
     ROOT.match_mime(content, limit)
+}
+
+/// Set the rate limit for the MIME detection.
+/// If the content is larger than the limit, only the first `limit` bytes will be used.
+/// The default limit is 3072 bytes.
+/// If the limit is set to 0, the whole content will be used.
+pub fn set_rate_limit(limit: usize) {
+    RATE_LIMIT.store(limit, Ordering::Relaxed);
 }
