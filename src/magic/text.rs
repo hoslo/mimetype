@@ -89,7 +89,7 @@ impl MimeDetector for PhpDetector {
 pub(crate) struct JsonDetector;
 
 impl MimeDetector for JsonDetector {
-    fn detect(&self, content: &[u8], _limit: usize) -> bool {
+    fn detect(&self, content: &[u8], limit: usize) -> bool {
         let content = trim_left_ws(content);
         // #175 A single JSON string, number or bool is not considered JSON.
         // JSON objects and arrays are reported as JSON.
@@ -99,7 +99,20 @@ impl MimeDetector for JsonDetector {
 
         let parsed = serde_json::from_slice::<Value>(content);
 
-        parsed.is_ok() && !content.is_empty()
+        if limit == 0 || content.len() < limit {
+            return parsed.is_ok();
+        }
+
+        match parsed {
+            Ok(_) => true,
+            Err(e) => {
+                // If a section of the file was provided, check if all of it was parsed.
+                if e.is_eof() && !content.is_empty() {
+                    return true;
+                }
+                true
+            }
+        }
     }
 }
 

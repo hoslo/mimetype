@@ -1409,7 +1409,7 @@ pub(crate) static ROOT: LazyLock<Mime> = LazyLock::new(|| {
     );
 
     // JSON matches a JavaScript Object Notation file.
-    let _json = Mime::new(
+    let json = Mime::new(
         "application/json".to_string(),
         ".json".to_string(),
         JsonDetector {},
@@ -1422,7 +1422,7 @@ pub(crate) static ROOT: LazyLock<Mime> = LazyLock::new(|| {
         ".txt".to_string(),
         TextDetector {},
     )
-    .children(vec![html, svg, xml, php, js, lua, perl, python, rtf]);
+    .children(vec![html, svg, xml, php, js, lua, perl, json, python, rtf]);
 
     Mime::new(
         "application/octet-stream".to_string(),
