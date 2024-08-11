@@ -1,6 +1,7 @@
 use std::{
     fmt::Debug,
     sync::atomic::{AtomicUsize, Ordering},
+    vec,
 };
 
 use crate::{magic::base::EmptyDetector, tree::ROOT};
@@ -8,6 +9,14 @@ use crate::{magic::base::EmptyDetector, tree::ROOT};
 const DEFAULT_LIMIT: usize = 3072;
 
 static RATE_LIMIT: AtomicUsize = AtomicUsize::new(DEFAULT_LIMIT);
+
+/// Set the rate limit for the MIME detection.
+/// If the content is larger than the limit, only the first `limit` bytes will be used.
+/// The default limit is 3072 bytes.
+/// If the limit is set to 0, the whole content will be used.
+pub fn set_rate_limit(limit: usize) {
+    RATE_LIMIT.store(limit, Ordering::Relaxed);
+}
 
 pub(crate) trait MimeDetector: Send + Sync {
     fn detect(&self, content: &[u8], limit: usize) -> bool;
@@ -52,7 +61,6 @@ impl Mime {
 
     fn match_mime(&self, content: &[u8], limit: usize) -> Mime {
         for c in &self.chilren {
-            // println!("{:?}", c);
             if c.detector.detect(content, limit) {
                 return c.match_mime(content, limit);
             }
@@ -85,6 +93,8 @@ impl Clone for Mime {
 }
 
 /// Detect the MIME type of the content.
+/// If the content is larger than the rate limit, only the first `limit` bytes will be used.
+/// The default limit is 3072 bytes.
 pub fn detect(content: &[u8]) -> Mime {
     let limit = RATE_LIMIT.load(Ordering::Relaxed);
     let mut content = content;
@@ -95,10 +105,58 @@ pub fn detect(content: &[u8]) -> Mime {
     ROOT.match_mime(content, limit)
 }
 
-/// Set the rate limit for the MIME detection.
-/// If the content is larger than the limit, only the first `limit` bytes will be used.
+#[cfg(feature = "async")]
+use tokio::io::{AsyncRead, AsyncReadExt};
+
+#[cfg(feature = "async")]
+/// Detect the MIME type of the content.
+/// If the content is larger than the rate limit, only the first `limit` bytes will be used.
 /// The default limit is 3072 bytes.
-/// If the limit is set to 0, the whole content will be used.
-pub fn set_rate_limit(limit: usize) {
-    RATE_LIMIT.store(limit, Ordering::Relaxed);
+pub async fn detech_from_reader<T: AsyncRead + Unpin>(reader: T) -> Mime {
+    let limit = RATE_LIMIT.load(Ordering::Relaxed);
+    let mut reader = reader;
+    let mut content = vec![];
+    if limit > 0 {
+        let mut limit_content = vec![0; limit];
+        let n = reader.read(&mut limit_content).await.unwrap();
+        if n == 0 {
+            return ROOT.clone();
+        }
+        content = limit_content[..n].to_vec();
+    } else {
+        let n = reader.read_to_end(&mut content).await.unwrap_or(0);
+        if n == 0 {
+            return ROOT.clone();
+        }
+    }
+
+    ROOT.match_mime(&content, limit)
+}
+
+#[cfg(feature = "sync")]
+use std::io::Read;
+
+#[cfg(feature = "sync")]
+/// Detect the MIME type of the content.
+/// If the content is larger than the rate limit, only the first `limit` bytes will be used.
+/// The default limit is 3072 bytes.
+pub fn detech_from_reader<T: Read>(reader: T) -> Mime {
+    let limit = RATE_LIMIT.load(Ordering::Relaxed);
+    let mut reader = reader;
+    let mut content = vec![];
+    if limit > 0 {
+        let mut limit_content = vec![0; limit];
+        let n = reader.read(&mut limit_content).unwrap();
+        if n == 0 {
+            return ROOT.clone();
+        }
+        content = limit_content[..n].to_vec();
+    } else {
+        let n = reader.read_to_end(&mut content).unwrap_or(0);
+        if n == 0 {
+            return ROOT.clone();
+        }
+    }
+
+    ROOT.match_mime(&content, limit)
 }

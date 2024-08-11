@@ -98,7 +98,6 @@ impl MimeDetector for JsonDetector {
         }
 
         let parsed = serde_json::from_slice::<Value>(content);
-
         if limit == 0 || content.len() < limit {
             return parsed.is_ok();
         }
@@ -185,10 +184,8 @@ impl MimeDetector for HarDetector {
         let (si, sl) = (content.index(s), s.len());
 
         let Some(si) = si else {
-            println!("11111");
             return false;
         };
-        println!("22222");
         // If the "log" string is the suffix of the input,
         // there is no need to search for the value of the key.
         if si + sl == content.len() {

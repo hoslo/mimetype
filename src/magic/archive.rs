@@ -46,7 +46,6 @@ impl MimeDetector for TarDetector {
             return false;
         }
         let (sum1, sum2) = tar_chksum(content);
-        // println!("sum1: {}, sum2: {}, recsum: {}", sum1, sum2, recsum);
         recsum == sum1 || recsum == sum2
     }
 }

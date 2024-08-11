@@ -25,5 +25,5 @@ fn main() {
 
 The output will be like:
 ```shell
-Mime { mime: "image/jpeg", aliases: [], extension: ".jpg", children: [] }
+Mime { mime: "image/jpeg", aliases: [], extension: ".jpg" }
 ```
