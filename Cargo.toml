@@ -1,6 +1,6 @@
 [package]
 name = "mimetype"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "detech mime type from file bytes"
 license = "Apache-2.0"
