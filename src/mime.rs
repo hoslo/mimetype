@@ -112,7 +112,7 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 /// Detect the MIME type of the content.
 /// If the content is larger than the rate limit, only the first `limit` bytes will be used.
 /// The default limit is 3072 bytes.
-pub async fn detech_from_reader<T: AsyncRead + Unpin>(reader: T) -> Mime {
+pub async fn detect_from_reader<T: AsyncRead + Unpin>(reader: T) -> Mime {
     let limit = RATE_LIMIT.load(Ordering::Relaxed);
     let mut reader = reader;
     let mut content = vec![];
@@ -140,7 +140,7 @@ use std::io::Read;
 /// Detect the MIME type of the content.
 /// If the content is larger than the rate limit, only the first `limit` bytes will be used.
 /// The default limit is 3072 bytes.
-pub fn detech_from_reader<T: Read>(reader: T) -> Mime {
+pub fn detect_from_reader<T: Read>(reader: T) -> Mime {
     let limit = RATE_LIMIT.load(Ordering::Relaxed);
     let mut reader = reader;
     let mut content = vec![];
